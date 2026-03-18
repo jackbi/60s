@@ -51,6 +51,8 @@ import { serviceQuark } from './modules/quark.module.ts'
 import { serviceWhois } from './modules/whois.module.ts'
 import { olympicsService } from './modules/olympics/olympics.module.ts'
 import { serviceDoubanWeekly } from './modules/douban-weekly.module.ts'
+import { serviceFetchRiddle } from './modules/riddle/fetchRiddle.module.ts'
+import { serviceRiddle } from './modules/riddle/riddle.module.ts'
 
 // import { serviceSlackingCalendar } from './modules/slacking-calendar/slacking-calendar.module.ts'
 
@@ -88,6 +90,7 @@ appRouter.get('/changya', serviceChangYa.handle())
 appRouter.get('/chemical', serviceChemical.handle())
 appRouter.get('/douyin', serviceDouyin.handle())
 appRouter.get('/duanzi', serviceDuanzi.handle())
+appRouter.get('/duanzi/batch', serviceDuanzi.handleBatch())
 appRouter.get('/duanzi/fetch', serviceFetchJokes.handle())
 appRouter.get('/epic', serviceEpic.handle())
 appRouter.get('/exchange-rate', serviceExRate.handle())
@@ -105,6 +108,9 @@ appRouter.get('/ai-news', serviceAINews.handle())
 appRouter.get('/awesome-js', serviceAwesomeJs.handle())
 appRouter.get('/qrcode', serviceQRCode.handle())
 appRouter.get('/dad-joke', serviceDadJoke.handle())
+appRouter.get('/dad-joke/batch', serviceDadJoke.handleBatch())
+appRouter.get('/riddle', serviceRiddle.handle())
+appRouter.get('/riddle/fetch', serviceFetchRiddle.handle())
 appRouter.get('/rednote', serviceRednote.handle())
 appRouter.get('/dongchedi', serviceDongchedi.handle())
 appRouter.get('/moyu', serviceMoyu.handle())

@@ -4,13 +4,14 @@
  * @Author: wenbin
  * @Date: 2026-03-18 11:33:20
  * @LastEditors: wenbin
- * @LastEditTime: 2026-03-18 11:56:38
+ * @LastEditTime: 2026-03-18 15:01:42
  * @FilePath: /hengran-global-api/src/modules/duanzi/fetchJokes.module.ts
  * Copyright (C) 2026 wenbin. All rights reserved.
  */
 import { readFile, writeFile } from 'node:fs/promises'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { Common } from '../../common.ts'
+import { config } from '../../config.ts'
 
 import type { RouterMiddleware } from '@oak/oak'
 
@@ -56,12 +57,17 @@ interface JisuApiResponse {
 }
 
 interface FetchCheckpoint {
-  lastFetchedPage: number
+  lastFetchPage: number
   updatedAt: string
 }
 
+interface UnifiedFetchCheckpoint {
+  duanzi?: FetchCheckpoint
+  riddle?: FetchCheckpoint
+}
+
 class ServiceFetchJokes {
-  private readonly baseUrl = 'https://api.jisuapi.com/xiaohua/all'
+  private readonly baseUrl = `${config.fetchDataSourceApi}/xiaohua/all`
   private readonly defaultPageSize = 20
   private readonly defaultRequestDelayMs = 500
   private readonly defaultRequestTimeoutMs = 12000
@@ -69,11 +75,10 @@ class ServiceFetchJokes {
   private readonly defaultStartPage = 5
   private readonly outputPath = new URL('./duanzi.json', import.meta.url)
   private readonly outputPicPath = new URL('./jokes_with_pic.json', import.meta.url)
-  private readonly checkpointPath = new URL('./fetchJokes.progress.json', import.meta.url)
+  private readonly checkpointPath = new URL('../../catch/fetch.json', import.meta.url)
 
   private getApiKey() {
-    // deno-lint-ignore no-process-global
-    return process.env.JISUAPI_APPKEY ?? '22fda44b2b3f0fd7'
+    return config.jisuApiKey
   }
 
   private cleanContent(content: string) {
@@ -170,29 +175,32 @@ class ServiceFetchJokes {
   }
 
   private async readCheckpoint() {
-    const checkpoint = await this.tryReadJson<FetchCheckpoint | null>(this.checkpointPath, null)
-    if (!checkpoint || typeof checkpoint.lastFetchedPage !== 'number' || checkpoint.lastFetchedPage <= 0) {
+    const state = await this.tryReadJson<UnifiedFetchCheckpoint>(this.checkpointPath, {})
+    const checkpoint = state.duanzi
+    if (!checkpoint || typeof checkpoint.lastFetchPage !== 'number' || checkpoint.lastFetchPage <= 0) {
       return null
     }
     return checkpoint
   }
 
-  private async saveCheckpoint(lastFetchedPage: number) {
+  private async saveCheckpoint(lastFetchPage: number) {
+    const state = await this.tryReadJson<UnifiedFetchCheckpoint>(this.checkpointPath, {})
+
     const checkpoint: FetchCheckpoint = {
-      lastFetchedPage,
+      lastFetchPage,
       updatedAt: new Date().toISOString(),
     }
 
-    await writeFile(this.checkpointPath, JSON.stringify(checkpoint, null, 2), 'utf8')
+    state.duanzi = checkpoint
+
+    await writeFile(this.checkpointPath, JSON.stringify(state, null, 2), 'utf8')
   }
 
   async fetchAndSave(options: FetchOptions = {}) {
     const merged = this.normalizeOptions(options)
 
     const checkpoint = await this.readCheckpoint()
-    const effectiveStartPage = checkpoint
-      ? Math.max(merged.startPage, checkpoint.lastFetchedPage + 1)
-      : merged.startPage
+    const effectiveStartPage = checkpoint ? Math.max(merged.startPage, checkpoint.lastFetchPage + 1) : merged.startPage
 
     const allJokes = await this.tryReadJson<string[]>(merged.outputPath, [])
     const jokesWithPic = await this.tryReadJson<JokeWithPic[]>(merged.outputPicPath, [])
@@ -227,14 +235,14 @@ class ServiceFetchJokes {
         totalPages,
         startPage: merged.startPage,
         effectiveStartPage,
-        endPage: checkpoint?.lastFetchedPage ?? 0,
+        endPage: checkpoint?.lastFetchPage ?? 0,
         fetchedPages: 0,
         uniqueCount: allJokes.length,
         outputPath: merged.outputPath.pathname,
         withPicCount: jokesWithPic.length,
         outputPicPath: merged.outputPicPath.pathname,
         skippedByCheckpoint: true,
-        checkpoint: checkpoint?.lastFetchedPage ?? 0,
+        checkpoint: checkpoint?.lastFetchPage ?? 0,
       }
     }
 
