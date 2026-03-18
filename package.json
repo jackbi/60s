@@ -37,8 +37,8 @@
     "prerelease": "node ./scripts/write-update-time.ts && git add . && git commit -m \"chore: update time in package.json\"",
     "release": "bumpp",
     "update-lockfile": "pnpm install && bun install && deno install --allow-scripts",
-    "docker:build": "docker build -t vikiboss/60s .",
-    "docker:run": "docker run --name 60s -p 4399:4399 -d vikiboss/60s",
+    "docker:build": "docker build -t wenbin/60s .",
+    "docker:run": "docker run --name 60s -p 4399:4399 -d wenbin/60s",
     "docker:re-run": "docker stop 60s && docker rm 60s && pnpm run docker:run"
   },
   "pnpm": {

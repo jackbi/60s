@@ -21,8 +21,8 @@ COPY . .
 FROM node:lts-alpine AS runner
 
 # 维护信息
-LABEL maintainer="Viki <hi@viki.moe> (https://github.com/vikiboss)"
-LABEL description="⏰ 60s API，每天 60 秒读懂世界｜一系列 高质量、开源、可靠 的开放 API 集合"
+LABEL maintainer="wenbin https://github.com/jackbi/60s"
+LABEL description="一个提供笑话、谜语等内容的 API 服务，数据来源于第三方接口，定期更新，支持国内外优先选择，使用 Node.js 和 TypeScript 编写，部署在 Docker 容器中，适合开发者和爱好者使用。"
 
 # 设置工作目录
 WORKDIR /app
