@@ -60,13 +60,13 @@ curl "https://60s.viki.moe/v2/60s?encoding=image-proxy" --output "$(date +%Y-%m-
 
 ## 📚 完整 API 列表与文档
 
-完整 API 文档托管在 [Apifox](https://docs.60s-api.viki.moe)，持续更新中，欢迎贡献。
+完整 API 文档托管在 [Apifox](https://hengran-global-api.apifox.cn/)，持续更新中，欢迎贡献。
 
 ---
 
 ## 🚀 快速开始
 
-你可以通过 [API 文档](https://docs.60s-api.viki.moe) 中提供的 [官方实例](https://60s.viki.moe) 或者 [社区公共实例](https://docs.60s-api.viki.moe/7306811m0) 快速开始。如果你想要更多的**掌控感**和**稳定性保证**，也可以通过下面的方式自行部署。
+你可以通过 [API 文档](https://hengran-global-api.apifox.cn/)
 
 ### 📦 一键部署
 

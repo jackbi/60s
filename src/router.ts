@@ -13,6 +13,7 @@ import { serviceChangYa } from './modules/changya.module.ts'
 import { serviceChemical } from './modules/chemical.module.ts'
 import { serviceDouyin } from './modules/douyin.module.ts'
 import { serviceDuanzi } from './modules/duanzi/duanzi.module.ts'
+import { serviceFetchJokes } from './modules/duanzi/fetchJokes.module.ts'
 import { serviceEpic } from './modules/epic.module.ts'
 import { serviceExRate } from './modules/exchange-rate.module.ts'
 import { serviceFabing } from './modules/fabing/fabing.module.ts'
@@ -87,6 +88,7 @@ appRouter.get('/changya', serviceChangYa.handle())
 appRouter.get('/chemical', serviceChemical.handle())
 appRouter.get('/douyin', serviceDouyin.handle())
 appRouter.get('/duanzi', serviceDuanzi.handle())
+appRouter.get('/duanzi/fetch', serviceFetchJokes.handle())
 appRouter.get('/epic', serviceEpic.handle())
 appRouter.get('/exchange-rate', serviceExRate.handle())
 appRouter.get('/fabing', serviceFabing.handle())

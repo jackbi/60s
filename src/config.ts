@@ -4,7 +4,7 @@
  * @Author: wenbin
  * @Date: 2026-03-18 09:07:56
  * @LastEditors: wenbin
- * @LastEditTime: 2026-03-18 09:31:08
+ * @LastEditTime: 2026-03-18 11:31:47
  * @FilePath: /hengran-global-api/src/config.ts
  * Copyright (C) 2026 wenbin. All rights reserved.
  */
@@ -17,6 +17,7 @@ export const config = {
   debug: !!process.env.DEBUG,
   overseas_first: !!process.env.OVERSEAS_FIRST,
   encodingParamName: process.env.ENCODING_PARAM_NAME || 'encoding',
+  jisuApiKey: process.env.JISU_API_KEY || '',
 }
 
 export const COMMON_MSG = `获取成功`
