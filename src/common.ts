@@ -174,9 +174,9 @@ export class Common {
 
   static getApiInfo() {
     return {
-      api_name: '60s-api',
+      api_name: 'hengran-global-api',
       api_version: pkg.version,
-      api_docs: 'https://docs.60s-api.viki.moe',
+      api_docs: 'https://hengran-global-api.apifox.cn/',
       author: config.author,
       user_group: config.group,
       github_repo: config.github,
