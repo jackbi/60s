@@ -37,8 +37,7 @@ interface FetchOptions {
   requestDelayMs?: number
   requestTimeoutMs?: number
   maxRetries?: number
-  startPage?: number
-  pageCount?: number
+  times?: number
   outputPath?: URL
   outputPicPath?: URL
 }
@@ -73,6 +72,7 @@ class ServiceFetchJokes {
   private readonly defaultRequestTimeoutMs = 12000
   private readonly defaultMaxRetries = 3
   private readonly defaultStartPage = 5
+  private readonly defaultTimes = 1
   private readonly outputPath = new URL('./duanzi.json', import.meta.url)
   private readonly outputPicPath = new URL('./jokes_with_pic.json', import.meta.url)
   private readonly checkpointPath = new URL('../../catch/fetch.json', import.meta.url)
@@ -158,8 +158,7 @@ class ServiceFetchJokes {
       requestDelayMs: options.requestDelayMs ?? this.defaultRequestDelayMs,
       requestTimeoutMs: options.requestTimeoutMs ?? this.defaultRequestTimeoutMs,
       maxRetries: options.maxRetries ?? this.defaultMaxRetries,
-      startPage: options.startPage ?? this.defaultStartPage,
-      pageCount: options.pageCount ?? 0,
+      times: options.times ?? this.defaultTimes,
       outputPath: options.outputPath ?? this.outputPath,
       outputPicPath: options.outputPicPath ?? this.outputPicPath,
     }
@@ -193,14 +192,15 @@ class ServiceFetchJokes {
 
     state.duanzi = checkpoint
 
-    await writeFile(this.checkpointPath, JSON.stringify(state, null, 2), 'utf8')
+    await writeFile(this.checkpointPath, JSON.stringify(state), 'utf8')
   }
 
   async fetchAndSave(options: FetchOptions = {}) {
     const merged = this.normalizeOptions(options)
 
     const checkpoint = await this.readCheckpoint()
-    const effectiveStartPage = checkpoint ? Math.max(merged.startPage, checkpoint.lastFetchPage + 1) : merged.startPage
+    const startPage = checkpoint ? checkpoint.lastFetchPage + 1 : this.defaultStartPage
+    const effectiveStartPage = startPage
 
     const allJokes = await this.tryReadJson<string[]>(merged.outputPath, [])
     const jokesWithPic = await this.tryReadJson<JokeWithPic[]>(merged.outputPicPath, [])
@@ -233,7 +233,7 @@ class ServiceFetchJokes {
       return {
         total,
         totalPages,
-        startPage: merged.startPage,
+        startPage,
         effectiveStartPage,
         endPage: checkpoint?.lastFetchPage ?? 0,
         fetchedPages: 0,
@@ -246,7 +246,7 @@ class ServiceFetchJokes {
       }
     }
 
-    const endPage = merged.pageCount > 0 ? Math.min(totalPages, effectiveStartPage + merged.pageCount - 1) : totalPages
+    const endPage = Math.min(totalPages, effectiveStartPage + merged.times - 1)
 
     console.log(`总笑话数: ${total}, 总页数: ${totalPages}`)
     console.log(`抓取范围: 第 ${effectiveStartPage} 页 - 第 ${endPage} 页`)
@@ -287,17 +287,18 @@ class ServiceFetchJokes {
       }
     }
 
-    await writeFile(merged.outputPath, JSON.stringify(allJokes, null, 2), 'utf8')
-    await writeFile(merged.outputPicPath, JSON.stringify(jokesWithPic, null, 2), 'utf8')
+    await writeFile(merged.outputPath, JSON.stringify(allJokes), 'utf8')
+    await writeFile(merged.outputPicPath, JSON.stringify(jokesWithPic), 'utf8')
     await this.saveCheckpoint(endPage)
 
     return {
       total,
       totalPages,
-      startPage: merged.startPage,
+      startPage,
       effectiveStartPage,
       endPage,
       fetchedPages: endPage - effectiveStartPage + 1,
+      times: merged.times,
       addedCount: allJokes.length - beforeTextCount,
       uniqueCount: allJokes.length,
       outputPath: merged.outputPath.pathname,
@@ -317,29 +318,13 @@ class ServiceFetchJokes {
   handle(): RouterMiddleware<'/duanzi/fetch'> {
     return async (ctx) => {
       try {
-        const pageSize = this.parsePositiveInt(ctx.request.url.searchParams.get('pagesize'), this.defaultPageSize)
-        const delayMs = this.parsePositiveInt(ctx.request.url.searchParams.get('delay'), this.defaultRequestDelayMs)
-        const timeoutMs = this.parsePositiveInt(
-          ctx.request.url.searchParams.get('timeout'),
-          this.defaultRequestTimeoutMs,
-        )
-        const retries = this.parsePositiveInt(ctx.request.url.searchParams.get('retries'), this.defaultMaxRetries)
-        const startPage = this.parsePositiveInt(
-          ctx.request.url.searchParams.get('startPage') ?? ctx.request.url.searchParams.get('start'),
-          this.defaultStartPage,
-        )
-        const pageCount = this.parsePositiveInt(
-          ctx.request.url.searchParams.get('pageCount') ?? ctx.request.url.searchParams.get('pages'),
-          0,
+        const times = this.parsePositiveInt(
+          ctx.request.url.searchParams.get('times') ?? ctx.request.url.searchParams.get('count'),
+          this.defaultTimes,
         )
 
         const result = await this.fetchAndSave({
-          pageSize,
-          requestDelayMs: delayMs,
-          requestTimeoutMs: timeoutMs,
-          maxRetries: retries,
-          startPage,
-          pageCount,
+          times,
         })
 
         ctx.response.body = Common.buildJson({

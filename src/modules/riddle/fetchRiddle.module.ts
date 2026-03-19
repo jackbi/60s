@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { Common } from '../../common.ts'
 import { config } from '../../config.ts'
+import { riddleConfig } from './riddle.config.ts'
 
 import type { RouterMiddleware } from '@oak/oak'
 
@@ -38,10 +39,11 @@ class ServiceFetchRiddle {
   private readonly baseUrl = `${config.fetchDataSourceApi}/miyu/search`
   private readonly fixedPageNum = 1
   private readonly fixedPageSize = 1
-  private readonly defaultClassId = 1
   private readonly defaultTimes = 10
   private readonly outputPath = new URL('./riddle.json', import.meta.url)
   private readonly checkpointPath = new URL('../../catch/fetch.json', import.meta.url)
+  private localRiddlesCache: RiddleItem[] | null = null
+  private checkpointCache: UnifiedFetchCheckpoint | null = null
 
   private parsePositiveInt(value: string | null, fallback: number) {
     if (!value) return fallback
@@ -49,30 +51,57 @@ class ServiceFetchRiddle {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
   }
 
+  private pickRandomClassId() {
+    const picked = Common.randomItem(riddleConfig)
+    const classId = Number.parseInt(picked?.classid ?? '1', 10)
+    return Number.isFinite(classId) && classId > 0 ? classId : 1
+  }
+
   private async readLocalRiddles() {
+    if (this.localRiddlesCache) {
+      return this.localRiddlesCache
+    }
+
     try {
       const content = await readFile(this.outputPath, 'utf8')
-      return JSON.parse(content) as RiddleItem[]
+      const parsed = JSON.parse(content) as RiddleItem[]
+      this.localRiddlesCache = Array.isArray(parsed) ? parsed : []
+      return this.localRiddlesCache
     } catch {
-      return []
+      this.localRiddlesCache = []
+      return this.localRiddlesCache
     }
   }
 
   private async readCheckpoint(): Promise<UnifiedFetchCheckpoint> {
+    if (this.checkpointCache) {
+      return this.checkpointCache
+    }
+
     try {
       const content = await readFile(this.checkpointPath, 'utf8')
       const parsed = JSON.parse(content) as UnifiedFetchCheckpoint
       if (!parsed || typeof parsed !== 'object') {
-        return {}
+        this.checkpointCache = {}
+        return this.checkpointCache
       }
-      return parsed
+
+      this.checkpointCache = parsed
+      return this.checkpointCache
     } catch {
-      return {}
+      this.checkpointCache = {}
+      return this.checkpointCache
     }
   }
 
   private async saveCheckpoint(state: UnifiedFetchCheckpoint) {
-    await writeFile(this.checkpointPath, JSON.stringify(state, null, 2), 'utf8')
+    this.checkpointCache = state
+    await writeFile(this.checkpointPath, JSON.stringify(state), 'utf8')
+  }
+
+  private async saveLocalRiddles(riddles: RiddleItem[]) {
+    this.localRiddlesCache = riddles
+    await writeFile(this.outputPath, JSON.stringify(riddles), 'utf8')
   }
 
   private async fetchRandomOnce(classId: number) {
@@ -116,7 +145,6 @@ class ServiceFetchRiddle {
   handle(): RouterMiddleware<'/riddle/fetch'> {
     return async (ctx) => {
       try {
-        const classId = this.parsePositiveInt(ctx.request.url.searchParams.get('classid'), this.defaultClassId)
         const times = this.parsePositiveInt(
           ctx.request.url.searchParams.get('times') ?? ctx.request.url.searchParams.get('count'),
           this.defaultTimes,
@@ -136,6 +164,7 @@ class ServiceFetchRiddle {
         let uniqueFetchedCount = 0
 
         for (let i = 0; i < times; i++) {
+          const classId = this.pickRandomClassId()
           const pageData = await this.fetchRandomOnce(classId)
           total = Math.max(total, pageData.total)
           fetchedCount += pageData.list.length
@@ -156,7 +185,7 @@ class ServiceFetchRiddle {
           }
         }
 
-        await writeFile(this.outputPath, JSON.stringify(localRiddles, null, 2), 'utf8')
+        await this.saveLocalRiddles(localRiddles)
 
         const newLastFetchPage = oldLastFetchPage + times
 
@@ -171,7 +200,6 @@ class ServiceFetchRiddle {
           total,
           pagenum: this.fixedPageNum,
           pagesize: this.fixedPageSize,
-          classid: classId,
           times,
           fetchedCount,
           uniqueFetchedCount,
