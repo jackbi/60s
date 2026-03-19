@@ -39,6 +39,7 @@
     "update-lockfile": "pnpm install && bun install && deno install --allow-scripts",
     "docker:build": "docker build -t wenbin/hengran-global-api .",
     "docker:run": "docker run --name hengran-global-api -p 4399:4399 -d wenbin/hengran-global-api",
+    "docker:run:network": "docker run --name hengran-global-api --network hengran_admin_app-network -p 4399:4399 -d wenbin/hengran-global-api",
     "docker:re-run": "docker stop hengran-global-api && docker rm hengran-global-api && pnpm run docker:run"
   },
   "pnpm": {
