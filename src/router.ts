@@ -53,6 +53,7 @@ import { olympicsService } from './modules/olympics/olympics.module.ts'
 import { serviceDoubanWeekly } from './modules/douban-weekly.module.ts'
 import { serviceFetchRiddle } from './modules/riddle/fetchRiddle.module.ts'
 import { serviceRiddle } from './modules/riddle/riddle.module.ts'
+import { serviceITNews } from './modules/it-news.module.ts'
 
 // import { serviceSlackingCalendar } from './modules/slacking-calendar/slacking-calendar.module.ts'
 
@@ -105,6 +106,7 @@ appRouter.get('/weibo', serviceWeibo.handle())
 appRouter.get('/zhihu', serviceZhihu.handle())
 appRouter.get('/lunar', serviceLunar.handle())
 appRouter.get('/ai-news', serviceAINews.handle())
+appRouter.get('/it-news', serviceITNews.handle())
 appRouter.get('/awesome-js', serviceAwesomeJs.handle())
 appRouter.get('/qrcode', serviceQRCode.handle())
 appRouter.get('/dad-joke', serviceDadJoke.handle())
