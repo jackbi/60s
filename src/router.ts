@@ -107,6 +107,7 @@ appRouter.get('/zhihu', serviceZhihu.handle())
 appRouter.get('/lunar', serviceLunar.handle())
 appRouter.get('/ai-news', serviceAINews.handle())
 appRouter.get('/it-news', serviceITNews.handle())
+appRouter.get('/it-news/rank', serviceITNews.handleRank())
 appRouter.get('/awesome-js', serviceAwesomeJs.handle())
 appRouter.get('/qrcode', serviceQRCode.handle())
 appRouter.get('/dad-joke', serviceDadJoke.handle())
@@ -117,6 +118,7 @@ appRouter.get('/rednote', serviceRednote.handle())
 appRouter.get('/dongchedi', serviceDongchedi.handle())
 appRouter.get('/moyu', serviceMoyu.handle())
 appRouter.get('/quark', serviceQuark.handle())
+appRouter.get('/whois', serviceWhois.handle())
 
 appRouter.get('/health', serviceHealth.handle())
 appRouter.get('/password', servicePassword.handle())
@@ -162,7 +164,6 @@ appRouter.all('/hash', serviceHash.handle())
 
 appRouter.all('/fanyi', serviceFanyi.handle())
 appRouter.all('/fanyi/langs', serviceFanyi.handleLangs())
-appRouter.get('/whois', serviceWhois.handle())
 
 // === 以下为测试接口，beta 前缀，接口可能不稳定 ===
 appRouter.get('/beta/kuan', serviceKuan.handle())

@@ -15,13 +15,29 @@ interface ITNewsItem {
   created_at: number
 }
 
+interface ITNewsRankItem {
+  title: string
+  link: string
+}
+
+interface ITNewsRank {
+  type: 'day' | 'week' | 'month'
+  list: ITNewsRankItem[]
+}
+
 interface CacheEntry {
   items: ITNewsItem[]
   timestamp: number
 }
 
+interface RankCacheEntry {
+  ranks: ITNewsRank[]
+  timestamp: number
+}
+
 class ServiceITNews {
   #cache: CacheEntry | null = null
+  #rankCache: RankCacheEntry | null = null
 
   handle(): RouterMiddleware<'/it-news'> {
     return async (ctx) => {
@@ -52,6 +68,76 @@ class ServiceITNews {
         }
       }
     }
+  }
+
+  handleRank(): RouterMiddleware<'/it-news'> {
+    return async (ctx) => {
+      const rankType = ctx.request.url.searchParams.get('type') || 'day'
+      const ranks = await this.#fetchRanks()
+      const found = ranks.find((r) => r.type === rankType)
+
+      if (!found) {
+        ctx.response.status = 400
+        ctx.response.body = Common.buildJson({ error: 'Invalid rank type. Must be one of "day", "week", or "month".' })
+        return
+      }
+
+      switch (ctx.state.encoding) {
+        case 'text': {
+          ctx.response.body = `IT 之家${rankType === 'day' ? '日' : rankType === 'week' ? '周' : '月'}榜\n\n${
+            found.list.map((e, idx) => `${idx + 1}. ${e.title}`).join('\n') ?? ''
+          }`
+          break
+        }
+
+        case 'markdown': {
+          ctx.response.body = `# IT 之家${rankType === 'day' ? '日' : rankType === 'week' ? '周' : '月'}榜\n\n${
+            found.list.map((e, idx) => `${idx + 1}. [${e.title}](${e.link})`).join('\n\n') ?? ''
+          }`
+          break
+        }
+
+        case 'json':
+        default: {
+          ctx.response.body = Common.buildJson(found.list || [])
+          break
+        }
+      }
+    }
+  }
+
+  async #fetchRanks(): Promise<ITNewsRank[]> {
+    if (this.#rankCache && Date.now() - this.#rankCache.timestamp < CACHE_TTL_MS) {
+      return this.#rankCache.ranks
+    }
+
+    const html = await (await fetch('https://www.ithome.com/', { headers: { 'User-Agent': Common.chromeUA } })).text()
+    const $ = load(html)
+    const ranksWrap = $('#rank')
+
+    const parseList = (selector: string): ITNewsRankItem[] => {
+      const items: ITNewsRankItem[] = []
+      ranksWrap
+        .find(selector)
+        .find('li')
+        .each((_, el) => {
+          const a = $(el).find('a').first()
+          const title = a.attr('title') || a.text().trim()
+          const link = a.attr('href') || ''
+          if (title && link) items.push({ title, link })
+        })
+
+      return items
+    }
+
+    const ranks: ITNewsRank[] = [
+      { type: 'day', list: parseList('#d-1') },
+      { type: 'week', list: parseList('#d-2') },
+      { type: 'month', list: parseList('#d-3') },
+    ]
+
+    this.#rankCache = { ranks, timestamp: Date.now() }
+    return ranks
   }
 
   async #fetch(): Promise<ITNewsItem[]> {
